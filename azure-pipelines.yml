@@ -1,0 +1,64 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.9'
+    addToPath: true
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install pytest pytest-cov
+  displayName: 'Install dependencies'
+
+
+variables:
+  sonarCloudServiceConnection: 'SonarCloud'
+  sonarCloudOrganization: 'john19960810'
+  sonarProjectKey: 'john19960810_test'
+  sonarProjectName: 'test'
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+
+- task: SonarCloudPrepare@2
+  displayName: 'Prepare SonarCloud Analysis'
+  inputs:
+    SonarCloud: '$(sonarCloudServiceConnection)'
+    organization: '$(sonarCloudOrganization)'
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: '$(sonarProjectKey)'
+    cliProjectName: '$(sonarProjectName)'
+    cliSources: 'asgards'
+    extraProperties: |
+      sonar.python.coverage.reportPaths=$(System.DefaultWorkingDirectory)/coverage.xml
+      sonar.test.exclusions=asgards/test_*.py
+      sonar.tests=asgards
+      sonar.test.inclusions=asgards/test_*.py
+
+- script: |
+    pytest asgards/test_checker.py --doctest-modules --junitxml=junit/test-results.xml --cov=asgards --cov-report=xml:coverage.xml
+  displayName: 'Run tests and generate coverage'
+
+- task: PublishCodeCoverageResults@1
+  displayName: 'Publish Test Results'
+  inputs:
+    codeCoverageTool: 'Cobertura'
+    summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage.xml'
+
+- task: SonarCloudAnalyze@2
+  displayName: 'SonarCloudAnalyze'
+  inputs:
+    jdkversion: 'JAVA_HOME_17_X64'
+
+- task: SonarCloudPublish@2
+  displayName: 'SonarCloudPublish'
+  inputs:
+    pollingTimeoutSec: '300'
