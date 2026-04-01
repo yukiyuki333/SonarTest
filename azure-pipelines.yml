@@ -4,18 +4,7 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.9'
-    addToPath: true
-
-- script: |
-    python -m pip install --upgrade pip
-    pip install pytest pytest-cov
-  displayName: 'Install dependencies'
-
-
+# 變數建議統一放在最上方
 variables:
   sonarCloudServiceConnection: 'SonarCloud'
   sonarCloudOrganization: 'john19960810'
@@ -23,10 +12,23 @@ variables:
   sonarProjectName: 'test'
 
 steps:
-  - checkout: self
-    fetchDepth: 0
+# 1. 檢出程式碼 (必須在最前面且縮排正確)
+- checkout: self
+  fetchDepth: 0
 
+# 2. 設定 Python 環境
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.9'
+    addToPath: true
 
+# 3. 安裝依賴
+- script: |
+    python -m pip install --upgrade pip
+    pip install pytest pytest-cov
+  displayName: 'Install dependencies'
+
+# 4. 準備 SonarCloud (注意這裡的縮排)
 - task: SonarCloudPrepare@2
   displayName: 'Prepare SonarCloud Analysis'
   inputs:
@@ -43,21 +45,24 @@ steps:
       sonar.tests=asgards
       sonar.test.inclusions=asgards/test_*.py
 
+# 5. 執行測試並產生報告
 - script: |
     pytest asgards/test_checker.py --doctest-modules --junitxml=junit/test-results.xml --cov=asgards --cov-report=xml:coverage.xml
   displayName: 'Run tests and generate coverage'
 
+# 6. 發佈測試結果
 - task: PublishCodeCoverageResults@1
   displayName: 'Publish Test Results'
   inputs:
     codeCoverageTool: 'Cobertura'
     summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage.xml'
 
+# 7. 執行分析
 - task: SonarCloudAnalyze@2
   displayName: 'SonarCloudAnalyze'
-  inputs:
-    jdkversion: 'JAVA_HOME_17_X64'
+  # 注意：CLI 模式通常不需要設定 jdkversion，若報錯可嘗試移除此 input
 
+# 8. 發佈到 SonarCloud
 - task: SonarCloudPublish@2
   displayName: 'SonarCloudPublish'
   inputs:
