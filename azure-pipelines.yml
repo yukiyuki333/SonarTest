@@ -29,7 +29,7 @@ steps:
   displayName: 'Install dependencies'
 
 # 4. 準備 SonarCloud (注意這裡的縮排)
-- task: SonarCloudPrepare@2
+- task: SonarCloudPrepare@3
   displayName: 'Prepare SonarCloud Analysis'
   inputs:
     SonarCloud: '$(sonarCloudServiceConnection)'
@@ -58,12 +58,12 @@ steps:
     summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage.xml'
 
 # 7. 執行分析
-- task: SonarCloudAnalyze@2
+- task: SonarCloudAnalyze@3
   displayName: 'SonarCloudAnalyze'
   # 注意：CLI 模式通常不需要設定 jdkversion，若報錯可嘗試移除此 input
 
 # 8. 發佈到 SonarCloud
-- task: SonarCloudPublish@2
+- task: SonarCloudPublish@3
   displayName: 'SonarCloudPublish'
   inputs:
     pollingTimeoutSec: '300'
